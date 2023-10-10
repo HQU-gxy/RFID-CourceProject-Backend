@@ -3,14 +3,14 @@ import sqlite3
 from os import path
 from bottle import *
 
-if not path.exists('shit.db'):
+if not path.exists("shit.db"):
     db = sqlite3.connect("shit.db")
     cursor = db.cursor()
-    cursor.execute('create table users(uid text, name text)')
-    cursor.execute('create table records(uid text, sign_dt text)')
+    cursor.execute("create table users(uid text, name text)")
+    cursor.execute("create table records(uid text, sign_dt text)")
     db.commit()
     db.close()
-    print('DB file not found, created one')
+    print("DB file not found, created one")
 
 db = sqlite3.connect("shit.db")
 cursor = db.cursor()
@@ -26,16 +26,16 @@ statusStr = {
 
 def findUsernameByUid(uid: str):
     cursor.execute('select name from users where uid="%s"' % uid)
-    username = cursor.fetchone()[0]
+    username = cursor.fetchone()
     if not username:
         return False
 
-    return username
+    return username[0]
 
 
 @route("/get_username")
 def getUsername():
-    uid = int(request.query["uid"])
+    uid = request.query["uid"]
     username = findUsernameByUid(uid)
     if not username:
         return statusStr["no_user"]
@@ -43,10 +43,9 @@ def getUsername():
     return '{"status": "SUC", "username": "%s"}' % username
 
 
-@route("/sign_in", method="POST")
+@route("/sign_in")
 def signIn():
-    args = request.forms
-    uid = args.get("uid")
+    uid = request.query["uid"]
     if not findUsernameByUid(uid):
         return statusStr["no_user"]
 
@@ -73,12 +72,16 @@ def modifyInfo():
         if cursor.fetchone():
             return statusStr["uid_exist"]
 
-        cursor.execute('update users set uid="%s" where uid="%s"' % (newUid, currentUid))
-        cursor.execute('update records set uid="%s" where uid="%s"' % (newUid, currentUid))
+        cursor.execute(
+            'update users set uid="%s" where uid="%s"' % (newUid, currentUid)
+        )
+        cursor.execute(
+            'update records set uid="%s" where uid="%s"' % (newUid, currentUid)
+        )
         db.commit()
         return statusStr["success"]
 
-    if args["to-change-name"]=="1":
+    if args["to-change-name"] == "1":
         uid = args["uid"]
         newName = args["new-name"]
 
